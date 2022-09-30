@@ -49,10 +49,8 @@ public class UniqueEventsQueue<T> {
 
     private void increaseCapacity() {
         int oldCapacity = queue.length;
-        // Double size if small; else grow by 50%
-        int newCapacity = oldCapacity + ((oldCapacity < 64) ?
-                (oldCapacity + 2) :
-                (oldCapacity >> 1));
+        int newCapacity = oldCapacity +
+                ((oldCapacity < 64) ? (oldCapacity + 2) : (oldCapacity >> 1));
         if (newCapacity - MAX_ARRAY_SIZE > 0) {
             throw new OutOfMemoryError();
         }
@@ -74,27 +72,9 @@ public class UniqueEventsQueue<T> {
 
         return el;
     }
-
-//    public T get2() {
-//        if (peek() == null) {
-//            return null;
-//        }
-//        T el = (T) queue[0];
-//        if (size > 1) {
-//            final Object[] items = queue;
-//            System.arraycopy(queue, 1, items, 0, queue.length - 1);
-//        } else if (size == 1) {
-//            queue[0] = null;
-//        }
-//        size--;
-//
-//        return el;
-//    }
-
     public T peek() {
         return (T) queue[0];
     }
-
     public int size() {
         return size;
     }
