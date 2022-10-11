@@ -1,24 +1,15 @@
-import java.util.*;
+import java.util.HashSet;
+import java.util.Objects;
 
-/**
- * Type parameters:
- * <T> – the type of elements held in this queue
- * We need to implement a queue with following property.
- * If we are to add an object which is already in the queue (using equals semantic) nothing should happen.
- * If there is still no such object in the queue (again, using equals semantic)
- * then the object is added to the end of the queue.
- * Rationale is that we do not want to have several same objects in the queue.
- * This could be especially useful when objects are events to recalculate something
- * and there is no sense to have several such events in the queue.
- * <p>
- * Let's call our queue UniqueEventsQueue. Let it has just two methods like add() and get().
- */
 @SuppressWarnings("unchecked")
-public class UniqueEventsQueue<T> {
+public class UniqueEventsQueue<T> implements UniqueQueue<T> {
     private static final int DEFAULT_INITIAL_CAPACITY = 16;
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
     private Object[] queue;
-    int size;
+    private final HashSet<T> content;
+    private int size;
+    private int getIndex;
+    private int addIndex;
 
     public UniqueEventsQueue() {
         this(DEFAULT_INITIAL_CAPACITY);
@@ -29,21 +20,27 @@ public class UniqueEventsQueue<T> {
             throw new IllegalArgumentException("Initial capacity can't be less than 1");
         }
         queue = new Object[initialCapacity];
+        content = new HashSet<>(initialCapacity);
     }
 
+    private int shiftIndex(int ind) {
+        return ind + 1 >= queue.length ? 0 : ind + 1;
+    }
+
+    @Override
     public boolean add(T el) {
-        if (el == null) {
-            throw new NullPointerException("Elements can't be equal to null");
-        }
-        for (int i = 0; i < size; i++) {
-            if (el.equals(queue[i])) {
-                return false;
-            }
+        Objects.requireNonNull(el);
+
+        if (!content.add(el)) {
+            return false;
         }
         if (size >= queue.length) {
             increaseCapacity();
         }
-        queue[size++] = el;
+        queue[addIndex] = el;
+        addIndex = shiftIndex(addIndex);
+        size++;
+
         return true;
     }
 
@@ -54,29 +51,39 @@ public class UniqueEventsQueue<T> {
         if (newCapacity - MAX_ARRAY_SIZE > 0) {
             throw new OutOfMemoryError();
         }
-        queue = Arrays.copyOf(queue, newCapacity);
+        queue = copyArrayWithShift(newCapacity);
+        getIndex = 0;
+        addIndex = size;
     }
 
+    @Override
     public T get() {
-        if (peek() == null) {
-            return null;
+        T el = (T) queue[getIndex];
+        if (el != null) {
+            final Object[] items = queue;
+            items[getIndex] = null;
+            getIndex = shiftIndex(getIndex);
+            size--;
+            content.remove(el);
         }
-        T el = (T) queue[0];
-        final Object[] items = queue;
-        if (size > 1) {
-            for (int i = 1; i < size; i++) {
-                items[i-1] = items[i];
-            }
-        }
-        items[--size] = null;
-
         return el;
     }
+
     public T peek() {
-        return (T) queue[0];
+        return (T) queue[getIndex];
     }
+
     public int size() {
         return size;
+    }
+
+    private Object[] copyArrayWithShift(int capacity) {
+        Object[] newArr = new Object[capacity];
+        int j = getIndex - 1;
+        for (int i = 0; i < size; i++) {
+            newArr[i] = queue[j = shiftIndex(j)];
+        }
+        return newArr;
     }
 
     @Override
@@ -90,8 +97,10 @@ public class UniqueEventsQueue<T> {
         UniqueEventsQueue<?> eqQueue = (UniqueEventsQueue<?>) o;
         boolean equal = eqQueue.size() == size;
         if (equal) {
-            for (int i = 0; i < size; i++) {
-                if (!Objects.equals(queue[i], eqQueue.queue[i])) {
+            int j = eqQueue.getIndex - 1;
+            int k = 0;
+            for (int i = getIndex; k++ < size; i = shiftIndex(i)) {
+                if (!Objects.equals(queue[i], eqQueue.queue[j = shiftIndex(j)])) {
                     equal = false;
                     break;
                 }
@@ -104,10 +113,12 @@ public class UniqueEventsQueue<T> {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append('[');
-        for (int i = 0; i < queue.length; i++) {
+        int j = 0;
+        for (int i = getIndex; j++ < size; i = shiftIndex(i)) {
             sb.append(queue[i]);
-            sb.append(i == queue.length - 1 ? ']' : ", ");
+            sb.append(j == size ? ']' : ", ");
         }
         return sb.toString();
     }
+
 }

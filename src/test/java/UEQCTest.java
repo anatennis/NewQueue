@@ -3,8 +3,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
-public class UEQTest {
-    private final UniqueEventsQueue<Integer> queue = new UniqueEventsQueue<>();
+public class UEQCTest {
+    private final UniqueEventsConcurrentQueue<Integer> queue = new UniqueEventsConcurrentQueue<>();
 
     @BeforeEach
     void initialize() {
@@ -16,7 +16,7 @@ public class UEQTest {
 
     @Test
     void testAdd() {
-        UniqueEventsQueue<Integer> resultQueue = new UniqueEventsQueue<>();
+        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
         resultQueue.add(156);
         int[] testContent = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
         for (int i : testContent) {
@@ -54,7 +54,7 @@ public class UEQTest {
 
     @Test
     void testAddAndGet() {
-        UniqueEventsQueue<Integer> resultQueue = new UniqueEventsQueue<>();
+        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
         int[] testContent = {5, 7};
         for (int i : testContent) {
             resultQueue.add(i);
