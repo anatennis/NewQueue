@@ -15,7 +15,7 @@ public class UEQCTest {
     }
 
     @Test
-    void testAdd() {
+    void testAdd() throws InterruptedException {
         UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
         resultQueue.add(156);
         int[] testContent = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
@@ -42,18 +42,17 @@ public class UEQCTest {
     }
 
     @Test
-    void testGet() {
+    void testGet() throws InterruptedException {
         Assertions.assertEquals(queue.get(), 1);
         Assertions.assertEquals(queue.get(), 2);
         Assertions.assertEquals(queue.get(), 3);
         Assertions.assertEquals(queue.get(), 4);
         Assertions.assertEquals(queue.get(), 6);
         Assertions.assertEquals(queue.get(), 5);
-        Assertions.assertNull(queue.get());
     }
 
     @Test
-    void testAddAndGet() {
+    void testAddAndGet() throws InterruptedException {
         UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
         int[] testContent = {5, 7};
         for (int i : testContent) {

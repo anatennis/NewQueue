@@ -13,5 +13,5 @@
  */
 public interface UniqueQueue<T> {
     boolean add(T el);
-    T get();
+    T get() throws InterruptedException;
 }

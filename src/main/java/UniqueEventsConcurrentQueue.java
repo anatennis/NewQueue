@@ -1,5 +1,6 @@
 import java.util.HashSet;
 import java.util.Objects;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -11,6 +12,7 @@ public class UniqueEventsConcurrentQueue<T> implements UniqueQueue<T> {
     private Object[] queue;
     private final HashSet<T> content;
     private final ReadWriteLock lock;
+    private final Condition isNotEmpty;
     private int size;
     private int getIndex;
     private int addIndex;
@@ -26,6 +28,7 @@ public class UniqueEventsConcurrentQueue<T> implements UniqueQueue<T> {
         queue = new Object[initialCapacity];
         content = new HashSet<>(initialCapacity);
         lock = new ReentrantReadWriteLock();
+        isNotEmpty = lock.writeLock().newCondition();
     }
 
     @Override
@@ -43,6 +46,7 @@ public class UniqueEventsConcurrentQueue<T> implements UniqueQueue<T> {
             queue[addIndex] = el;
             addIndex = shiftIndex(addIndex);
             size++;
+            isNotEmpty.signal();
         } finally {
             lock.unlock();
         }
@@ -57,27 +61,48 @@ public class UniqueEventsConcurrentQueue<T> implements UniqueQueue<T> {
             throw new OutOfMemoryError();
         }
         queue = copyArrayWithShift(newCapacity);
+        resetIndexes();
+    }
+
+    private void resetIndexes() {
         getIndex = 0;
         addIndex = size;
     }
 
     @Override
-    public T get() {
+    public T get() throws InterruptedException {
         final Lock lock = this.lock.writeLock();
         lock.lock();
         try {
+            while (size == 0) {
+                //System.out.println(Thread.currentThread().getName() + " I'M WAITING");
+                isNotEmpty.await();
+            }
             T el = (T) queue[getIndex];
-            if (el != null) {
-                final Object[] items = queue;
-                items[getIndex] = null;
-                getIndex = shiftIndex(getIndex);
-                size--;
-                content.remove(el);
+            final Object[] items = queue;
+            items[getIndex] = null;
+            getIndex = shiftIndex(getIndex);
+            size--;
+            content.remove(el);
+            if (hugeRemainingCapacity()) {
+                decreaseCapacity();
             }
             return el;
         } finally {
             lock.unlock();
         }
+    }
+
+    private boolean hugeRemainingCapacity() {
+        return size > DEFAULT_INITIAL_CAPACITY && queue.length > size << 2;
+    }
+
+    private void decreaseCapacity() {
+        int oldCapacity = queue.length;
+        int newCapacity = (oldCapacity >> 1) + 1;
+        //System.out.println("OLD CAPACITY == " + oldCapacity + " NEW CAPACITY == " + newCapacity);
+        queue = copyArrayWithShift(newCapacity);
+        resetIndexes();
     }
 
     public T peek() {
@@ -99,6 +124,7 @@ public class UniqueEventsConcurrentQueue<T> implements UniqueQueue<T> {
             lock.unlock();
         }
     }
+
     public Object[] toArray() {
         final Lock lock = this.lock.readLock();
         lock.lock();
