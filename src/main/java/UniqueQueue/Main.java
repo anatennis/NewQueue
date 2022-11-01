@@ -1,14 +1,16 @@
+package UniqueQueue;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Main {
     public static final Integer POISON_PILL = Integer.MAX_VALUE;
-    static UniqueEventsConcurrentQueue<Integer> queue = new UniqueEventsConcurrentQueue<>();
-    //static UniqueEventsConcurrentQueue<Integer> queue2 = new UniqueEventsConcurrentQueue<>();
-    //static UniqueEventsQueue<Integer> queue = new UniqueEventsQueue<>();
+    static UniqueEventsConcurrentQueue<Integer> queue = new UniqueEventsConcurrentQueue<Integer>();
+    //static UniqueQueue.UniqueEventsConcurrentQueue<Integer> queue2 = new UniqueQueue.UniqueEventsConcurrentQueue<>();
+    //static UniqueQueue.UniqueEventsQueue<Integer> queue = new UniqueQueue.UniqueEventsQueue<>();
 
     public static void main(String[] args) {
-        UniqueQueue<Integer> queue = new UniqueEventsConcurrentQueue<>();
+        UniqueQueue<Integer> queue = new UniqueEventsConcurrentQueue<Integer>();
 
         ExecutorService executorService = null;
         try {

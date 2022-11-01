@@ -1,3 +1,5 @@
+package UniqueQueue;
+
 /**
  * Type parameters:
  * <T> – the type of elements held in this queue
@@ -9,7 +11,7 @@
  * This could be especially useful when objects are events to recalculate something
  * and there is no sense to have several such events in the queue.
  * <p>
- * Let's call our queue UniqueEventsQueue. Let it has just two methods like add() and get().
+ * Let's call our queue UniqueQueue.UniqueEventsQueue. Let it has just two methods like add() and get().
  */
 public interface UniqueQueue<T> {
     boolean add(T el);

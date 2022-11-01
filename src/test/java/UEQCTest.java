@@ -1,10 +1,11 @@
+import UniqueQueue.UniqueEventsConcurrentQueue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
 public class UEQCTest {
-    private final UniqueEventsConcurrentQueue<Integer> queue = new UniqueEventsConcurrentQueue<>();
+    private final UniqueEventsConcurrentQueue<Integer> queue = new UniqueEventsConcurrentQueue<Integer>();
 
     @BeforeEach
     void initialize() {
@@ -16,7 +17,7 @@ public class UEQCTest {
 
     @Test
     void testAdd() throws InterruptedException {
-        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
+        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<Integer>();
         resultQueue.add(156);
         int[] testContent = {10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
         for (int i : testContent) {
@@ -53,7 +54,7 @@ public class UEQCTest {
 
     @Test
     void testAddAndGet() throws InterruptedException {
-        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<>();
+        UniqueEventsConcurrentQueue<Integer> resultQueue = new UniqueEventsConcurrentQueue<Integer>();
         int[] testContent = {5, 7};
         for (int i : testContent) {
             resultQueue.add(i);
