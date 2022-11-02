@@ -2,7 +2,6 @@ package CSVSorter;
 
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 

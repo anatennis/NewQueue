@@ -27,8 +27,8 @@ public class CSVSorter {
     private static final CSVFormat CSV_FORMAT = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build();
     private final static int DEFAULT_MAX_RECORDS_PER_FILE = 80_000;
     private final static int DEFAULT_MAX_FILES_PER_MERGE = 50;
-    private final int maxFilesPerMerge;
-    private final int maxRecordsPerFile;
+    private int maxFilesPerMerge;
+    private int maxRecordsPerFile;
     private File output;
     private Comparator<CSVRecord> comparator;
 
@@ -46,7 +46,13 @@ public class CSVSorter {
         this.comparator = comparator;
     }
 
+    public void setMaxFilesPerMerge(int maxFilesPerMerge) {
+        this.maxFilesPerMerge = maxFilesPerMerge;
+    }
 
+    public void setMaxRecordsPerFile(int maxRecordsPerFile) {
+        this.maxRecordsPerFile = maxRecordsPerFile;
+    }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public void sort(String fileInputName, String fileOutputName) throws IOException {
@@ -59,7 +65,7 @@ public class CSVSorter {
         try (CSVParser parser = new CSVParser(new BufferedReader(new InputStreamReader(new FileInputStream(fileInputName))), CSV_FORMAT)) {
             CSVRecordBufferReader bufferReader = new CSVRecordBufferReader(parser);
             CSVRecord csvRecord;
-            while ((csvRecord = bufferReader.get()) != null) {
+            while ((csvRecord = bufferReader.next()) != null) {
                 recordsList.add(csvRecord);
                 if (recordsList.size() == maxRecordsPerFile) {
                     fileList.add(sortAndWriteToFile(recordsList));
@@ -84,22 +90,18 @@ public class CSVSorter {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private void mergeAllFilesInOutputFile(List<File> files) throws IOException {
         List<CSVRecordBufferReader> bufferReaders = new ArrayList<>();
-        int index = files.size();
-        CSVParser parser = null;
-        try {
-            for (int i = 0; i < files.size(); i++) {
-                parser = new CSVParser(new BufferedReader(new InputStreamReader(new FileInputStream(files.get(i)))), CSV_FORMAT);
-                bufferReaders.add(new CSVRecordBufferReader(parser));
-                if (bufferReaders.size() == maxFilesPerMerge || i + 1 == index) {
-                    index = bufferReaders.size() == maxFilesPerMerge ? files.size() : index + maxFilesPerMerge;
-                    files.add(mergeFilesPool(bufferReaders, i == files.size() - 1));
-                    bufferReaders = new ArrayList<>();
+        for (int i = 0; i < files.size(); i++) {
+            CSVParser parser = new CSVParser(new BufferedReader(new InputStreamReader(new FileInputStream(files.get(i)))), CSV_FORMAT);
+            bufferReaders.add(new CSVRecordBufferReader(parser));
+            boolean isLastMerge = i + 1 == files.size();
+            if (bufferReaders.size() == maxFilesPerMerge || isLastMerge) {
+                files.add(mergeFilesPool(bufferReaders, isLastMerge));
+                bufferReaders = new ArrayList<>();
+                if (isLastMerge) {
+                    break;
                 }
             }
-        } finally {
-            if (parser != null) parser.close();
         }
-
 
         for (int i = 0; i < files.size() - 1; i++) {
             files.get(i).delete();
@@ -108,10 +110,10 @@ public class CSVSorter {
 
     private File mergeFilesPool(List<CSVRecordBufferReader> recordReaders, boolean isLastMerge) throws IOException {
         PriorityQueue<CSVRecordBufferReader> queue = new PriorityQueue<>(
-                (o1, o2) -> comparator.compare(o1.peek(), o2.peek())
+                (o1, o2) -> comparator.compare(o1.get(), o2.get())
         );
         for (CSVRecordBufferReader reader : recordReaders) {
-            if (reader.peek() != null) {
+            if (reader.get() != null) {
                 queue.add(reader);
             }
         }
@@ -122,12 +124,12 @@ public class CSVSorter {
              CSVPrinter printer = new CSVPrinter(bufferedWriter, CSV_FORMAT)) {
             while (queue.size() > 0) {
                 CSVRecordBufferReader recordReader = queue.poll();
-                writeRecordToFile(recordReader.get(), printer, printHeaders);
+                writeRecordToFile(recordReader.next(), printer, printHeaders);
                 printHeaders = false;
-                if (recordReader.peek() == null) {
+                if (recordReader.get() == null) {
                     recordReader.close();
                 } else {
-                    queue.add(recordReader); // add it back
+                    queue.add(recordReader);
                 }
             }
         } finally {
@@ -172,6 +174,18 @@ public class CSVSorter {
         printer.printRecord(record);
     }
 
+    public static List<CSVRecord> filetoList(String fileName) throws IOException {
+        List<CSVRecord> recordsList = new ArrayList<>();
+        try (CSVParser parser = new CSVParser(new BufferedReader(new InputStreamReader(new FileInputStream(fileName))), CSV_FORMAT)) {
+            CSVRecordBufferReader bufferReader = new CSVRecordBufferReader(parser);
+            CSVRecord csvRecord;
+            while ((csvRecord = bufferReader.next()) != null) {
+                recordsList.add(csvRecord);
+            }
+        }
+        return recordsList;
+    }
+
     private static class CSVRecordBufferReader {
         private final CSVParser parser;
         private CSVRecord curRecord;
@@ -183,11 +197,11 @@ public class CSVSorter {
             this.parser = parser;
         }
 
-        CSVRecord peek() {
+        CSVRecord get() {
             return curRecord;
         }
 
-        CSVRecord get() {
+        CSVRecord next() {
             CSVRecord answer = curRecord;
             curRecord = iterator.hasNext() ? iterator.next() : null;
             return answer;
